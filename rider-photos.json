@@ -1,0 +1,74 @@
+{
+	"Comment": "Rider photo processing workflow",
+	"StartAt": "FaceDetection",
+	"States": {
+		"FaceDetection": {
+			"Type": "Task",
+			"Resource": "arn:aws:lambda:us-east-1:994030152439:function:wildrydes-step-module-resour-FaceDetectionFunction-1DTCS9XTYYU3K",
+			"ResultPath": "$.detectedFaceDetails",
+			"Next": "CheckFaceDuplicate",
+			"Catch": [
+				{
+					"ErrorEquals": [
+						"PhotoDoesNotMeetRequirementError"
+					],
+					"ResultPath": "$.errorInfo",
+					"Next": "PhotoDoesNotMeetRequirement"
+				}
+			]
+		},
+		"PhotoDoesNotMeetRequirement": {
+			"Type": "Task",
+			"Resource": "arn:aws:lambda:us-east-1:994030152439:function:wildrydes-step-module-res-NotificationPlaceholderF-1QMKDIY6D8G2Q",
+			"End": true
+		},
+		"CheckFaceDuplicate": {
+			"Type": "Task",
+			"Resource": "arn:aws:lambda:us-east-1:994030152439:function:wildrydes-step-module-resources-FaceSearchFunction-1HSBO0SR06FZK",
+			"ResultPath": null,
+			"Next": "ParallelProcessing",
+			"Catch": [
+				{
+					"ErrorEquals": [
+						"FaceAlreadyExistsError"
+					],
+					"ResultPath": "$.errorInfo",
+					"Next": "PhotoDoesNotMeetRequirement"
+				}
+			]
+		},
+		"ParallelProcessing": {
+			"Type": "Parallel",
+			"Branches": [
+				{
+					"StartAt": "AddFaceToIndex",
+					"States": {
+						"AddFaceToIndex": {
+							"Type": "Task",
+							"Resource": "arn:aws:lambda:us-east-1:994030152439:function:wildrydes-step-module-resources-IndexFaceFunction-1CTB8FB7VAS9U",
+							"End": true
+						}
+					}
+				},
+				{
+					"StartAt": "Thumbnail",
+					"States": {
+						"Thumbnail": {
+							"Type": "Task",
+							"Resource": "arn:aws:lambda:us-east-1:994030152439:function:wildrydes-step-module-resources-ThumbnailFunction-17JXI1AJPEHOM",
+							"End": true
+						}
+					}
+				}
+			],
+			"ResultPath": "$.parallelResult",
+			"Next": "PersistMetadata"
+		},
+		"PersistMetadata": {
+			"Type": "Task",
+			"Resource": "arn:aws:lambda:us-east-1:994030152439:function:wildrydes-step-module-reso-PersistMetadataFunction-QDZGKG26PG5R",
+			"ResultPath": null,
+			"End": true
+		}
+	}
+}	

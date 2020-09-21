@@ -1,0 +1,373 @@
+<html>
+<meta charset="utf-8">
+<title>Image Processing</title>
+<meta name="description" content="S3 PreSigned Url Generator">
+<meta name="keywords" content="S3 PreSigned Url Generator">
+<style>
+    input[type=text],
+    select {
+        width: 100%;
+        padding: 12px 20px;
+        margin: 8px 0;
+        display: inline-block;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 24px;
+    }
+    
+    .div-page {
+        border-radius: 5px;
+        background-color: #f2f2f2;
+        width: 40%;
+        margin: auto;
+        padding: 10px;
+        text-align: left;
+        background-color: rgb(0,0,0); /* Fallback color */
+        background-color: rgba(0,0,0, 0.4); /* Black w/opacity/see-through */
+        color: white;
+        font-weight: bold;
+        border: 3px solid #f1f1f1;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2;
+        padding: 20px;
+        text-align: center;
+    }
+
+    #title {
+        text-align: center;
+        font-size: 50px;
+        color: #151B54;
+        font-family: monospace;
+    }
+    
+    .div-form {
+        border-radius: 5px;
+        margin: auto;   
+        text-align: center;
+    }
+    
+    .div-obj-holder {
+        border-radius: 5px;
+        width: 80%;
+        margin: auto;
+        padding: 30px;
+        height: auto;
+    }
+    
+    label {
+        font-size: 25px;
+        color: #666;
+    }
+    
+    .UrlSignerBtn:hover {
+        background-color: #2B547E;
+    }
+    
+    .UrlSignerBtn {
+        width: 100%;
+        background-color: #151B54;
+        color: white;
+        padding: 14px 20px;
+        margin: 8px 0;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .ObjectUploadBtn:hover {
+        background-color: #2B547E;
+    }
+    
+    .ObjectUploadBtn {
+        width: 100%;
+        background-color: #151B54;
+        color: white;
+        padding: 14px 20px;
+        margin: 8px 0;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    img {
+        max-width: auto;
+        max-height: auto;
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+        border-radius: 8px;
+    }
+    
+    a {
+        text-align: left;
+    }
+
+    .bg-image {
+      /* The image used */
+      background-image: url("background.jpg");
+      
+      /* Add the blur effect */
+      filter: blur(8px);
+      -webkit-filter: blur(8px);
+      
+      /* Full height */
+      height: 85%;  
+      
+      /* Center and scale the image nicely */
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+    }
+    
+    .urlText {
+        overflow-x: hidden;
+        float: left;
+        font-size: small;
+        font-style: italic;
+        text-align: center;
+        white-space: nowrap;
+        width: 95%;
+    }
+    
+    .urlText:hover {
+        overflow-x: auto;
+    }
+    
+    body {
+        font-family: Helvetica;
+        text-align: center;
+    }
+</style>
+
+<body>
+    <label id="title">Image Processing</label><br><br>
+    <div class="bg-image"></div>
+    <div class="div-page" id="main">
+        <input style='display:none;' type="text" id="FileNameId" name="FileNameId">
+        <label for="OperationTypeLbl" id="label1">What do you want to do?</label>
+
+        <select id="methodTypeId" name="methodType">
+            <option value="GET" selected="selected" id="getdetail">Read from Bucket</option>
+            <option value="POST">Write to Bucket</option>
+        </select>
+
+        <div class="div-form" style='display:none;' id='uploadFileDiv'>
+            <form enctype="multipart/form-data" method="POST" name="formS3ObjManager" id="formS3ObjManagerId">
+                <input type="file" name="file" required />
+            </form>
+            <button class="UrlSignerBtn" id='ObjectUploadBtnId'><span>Upload File </span></button>
+        </div>
+        <button class="UrlSignerBtn" id='UrlSignerBtnId'><span>Get Pre Signed Url </span></button>
+
+        <div id="urlTextId" class="urlText"></div>
+
+        <div id="username" style='display:none;'>
+            <label for="bktObjectLbl" id="username1">User Name</label>
+            <input type="text" id="UserNameId" name="UserName" value="">
+            <button class="UrlSignerBtn" id='SubmitBtnId'><span> Submit </span></button>
+            <button class="UrlSignerBtn" id='GetImgBtnId' style='display:none;'><span> Get Image </span></button>
+            <div class="div-obj-holder" style='display:none;' id="div-obj-holderId">
+                <div id="SignedUrlId"></div>
+            </div>
+        </div>
+        <div id="submit" class="urlText"></div>
+
+    </div>
+    <br />
+
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script>
+    /*
+              // Sample AJAX Upload function
+              $.ajax({
+                  url: 'https://s6zm8l0hal.execute-api.eu-central-1.amazonaws.com/prod',
+                  type: 'POST',
+                  contentType: "application/json; charset=utf-8",
+                  data:{"BucketName":"secure-pvt-bucket","ObjectName":"1.png"},
+                  beforeSend: function(){ $( '#loader' ).show();},
+                  success: function( res ) { alert( "Success:"+ res.PreSignedUrl ); },
+                  //success: function( res ) { alert( JSON.stringify(res) ); },
+                  error:function(e){ alert('Lambda returned error\n\n' + e.responseText); },
+                  complete:function(){ $('#loader').hide(); }
+              });
+              */
+
+    /*
+    Function called when the GET Object Event Button is triggered.
+    Images will be loaded automaticaly at the bottom div, For files, it will just show a null image icon(which is an error, if you have time fix it)
+    */
+
+    $(document).ready(function() {
+        $("#GetImgBtnId").click(function() {
+            $.ajax({
+                url: 'https://jw0z1nvsm6.execute-api.us-east-1.amazonaws.com/url',
+                type: 'POST',
+                contentType: "application/json; charset=utf-8",
+                data: JSON.stringify({
+                    "BucketName": "wildrydes-step-module-resource-riderphotos3bucket-18xyzcvph91xl",
+                    "ObjectName": $('#SignedUrlId').text(),
+                    "methodType": 'GET',
+                }, ),
+                dataType: "json",
+                //beforeSend: function(){ $( '#loader' ).show();},
+                success: function(res) {
+                    $("#urlTextId").html("Your <a href=" + res.PreSignedUrl + ">Pre-Signed Url</a> expires in " + res.ExpiresIn +" Seconds");
+                    $("#SignedUrlId").html("<img src='" + res.PreSignedUrl + "' width='260px' height='300px'>").show();
+                    $("#div-obj-holderId").show();
+                    $("#username1").hide();
+                    $("#UserNameId").hide();
+                    $("#GetImgBtnId").hide();
+                    $("#submit").hide();
+                    $("#main").css({"width": "auto", "height": "auto"});
+                },
+                error: function(e) {
+                    $("#urlTextId").html("Unable to Retrieve Image, Check Object Key name.");
+                    $("#SignedUrlId").html("<i>"+ e.responseText + "</i>");
+                    $("#div-obj-holderId").show();
+                },
+                // complete: function() { $('#loader').hide(); }
+            });
+        });
+    });
+
+    $(document).ready(function() {
+        $('#SubmitBtnId').click(function() {
+            $.ajax({
+                url: 'https://3ai3t5c2eb.execute-api.us-east-1.amazonaws.com/dev',
+                type: 'POST',
+                contentType: "application/json; charset=utf-8",
+                data: JSON.stringify({
+                    "UserName": $('#UserNameId').val(),
+                    "ObjectID": $('#SignedUrlId').text(),
+                }, ),
+                dataType: "json",
+                success: function(data) {
+                    // self.SuccessMessage(data)
+                    console.log('File Upload Successfully!');
+                    $("#submit").html("Status: Submitted Successfully!!<br /> ");
+                    $("#urlTextId").hide();
+                    $("#uploadFileDiv").hide();
+                    $("#SubmitBtnId").hide();
+                    $("#GetImgBtnId").show();
+                    // $("#div-obj-holderId").show();
+                }
+            }).fail(
+                function (xhr, textStatus, err){
+                    alert("Error Happened"+err);
+                }   
+            );
+        });
+    });
+
+    /*
+    Function called when the Upload Object Event Button is triggered.
+    Gets the Pre-Signed Upload Url and Triggers the Upload Function
+    */
+    $(document).ready(function() {
+        $("#ObjectUploadBtnId").click(function() {
+            $.ajax({
+                url: 'https://jw0z1nvsm6.execute-api.us-east-1.amazonaws.com/url',
+                type: 'POST',
+                contentType: "application/json; charset=utf-8",
+                data: JSON.stringify({
+                    "BucketName": "wildrydes-step-module-resource-riderphotos3bucket-18xyzcvph91xl",
+                    "methodType": $('#methodTypeId option:selected').attr('value'),
+                    "FileName": $('#FileNameId').val()
+                }, ),
+                dataType: "json",
+                //beforeSend: function(){ $( '#loader' ).show();},
+                success: function(res) {
+                    uploadFile(res, res.url);
+                },
+                error: function(e) {
+                    $("#urlTextId").html("Failed: Unable to Get Signed Upload Url" + e.responseText);
+                    $("#SignedUrlId").html("");
+                    $("#div-obj-holderId").show();
+                },
+                complete: function() {
+                    $('#loader').hide();
+                }
+            });
+        });
+    });
+
+    /*
+       Function called when file input updated. If there is a file selected, then
+       start upload procedure by asking for a signed URL request from Lambda.
+    */
+    $(document).ready(function() {
+        $('input[type="file"]').change(function(e) {
+            var fileName = e.target.files[0].name;
+            $('#FileNameId').val(fileName);
+        });
+    });
+
+    /*
+    Show the GET / POST buttons based on drop down selection
+    */
+    $(document).ready(function() {
+        $('#methodTypeId').on('change', function() {
+            if (this.value == 'POST') {
+                $("#uploadFileDiv").show();
+                $("#UrlSignerBtnId").hide();
+                $("#div-obj-holderId").hide();
+            } else {
+                $("#UrlSignerBtnId").show();
+                $("#uploadFileDiv").hide();
+                $("#div-obj-holderId").hide();
+            }
+        });
+    });
+
+    /*
+      Function to carry out the actual POST request to S3 using the signed request from the Python app.
+    */
+
+    function uploadFile(s3Data, url) {
+        var formData = new FormData();
+        /*
+        All the PreSigned URL fields to FormData as required by Amazon S3
+        */
+        for (key in s3Data.fields) {
+            formData.append(key, s3Data.fields[key]);
+        };
+        /*
+        Attach the file to be uploaded to FormData
+        */
+        formData.append('file', $('input[type="file"]')[0].files[0]);
+
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: formData,
+            cache: false,
+            contentType: false,
+            processData: false,
+            success: function(data, textStatus, request) {
+                if (request.status === 200 || request.status === 204) {
+                    $("#urlTextId").html("Status: Uploaded Successfully.<br /> ");
+                    $("#SignedUrlId").html(s3Data.fields.key);
+                    console.log("Status:" + request.status);
+                    $("#div-obj-holderId").hide();
+                    $('#username').show();
+                    $('#ObjectUploadBtnId').hide();
+                    $('#ObjectNameId').hide();
+                    $('#methodTypeId').hide();
+                    $('#label1').hide();
+                    $('#label2').hide();
+                    $('#SignedUrlId').hide();
+                } else {
+                    $("#urlTextId").html("Br!! Unable to upload Object. Try again!! <br />Status:" + request.status);
+                }
+            },
+        });
+
+    }
+</script>
+</body>
+</html>
